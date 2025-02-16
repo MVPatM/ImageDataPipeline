@@ -1,0 +1,18 @@
+{
+    "type": "record",
+    "name": "ImageData",
+    "fields": [
+        {
+            "name": "NumberOfSegment", 
+            "type": "int"
+        },
+        {
+            "name": "SegmentOrder", 
+            "type": "int"
+        },
+        {
+            "name": "Image", 
+            "type": "bytes"
+        }
+    ]
+}
