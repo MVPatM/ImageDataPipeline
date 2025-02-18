@@ -91,8 +91,6 @@ def send_image() -> None:
             cnt = cnt + 1
             if cnt == 10000:
                 break
-            # wait for a moment
-            #time.sleep(0.01)
         break
 
 if __name__ == "__main__":
