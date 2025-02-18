@@ -120,7 +120,6 @@ def Clean_Dict(TempStorage: dict):
         # Iterate every 30 minutes
         time.sleep(1800)
     
-# 오늘 바뀐 점 process수 증가됨
 def MiddleWare():
     # get the avro scheam and registry to server
     manager = multiprocessing.Manager()
@@ -134,19 +133,14 @@ def MiddleWare():
         p.start()
         procs.append(p)
     
-    """
     # Generate the process for cleaning the dictionary
     p = multiprocessing.Process(target=Clean_Dict, args=(tempStorage, ))
     p.start()
     procs.append(p)
-    """
+
     
     for p in procs:
         p.join()
 
 if __name__ == "__main__":
-    MiddleWare()
-    
-
-    
-    
+    MiddleWare()    
