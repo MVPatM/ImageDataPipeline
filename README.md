@@ -1,4 +1,11 @@
 # ImageDataPipeline
+1. I assume that clients generate the images and send to flask server.
+2. Flask send images that are sent from many clients to kafka cluster.
+   Flask have the role of producer.
+3. Consumer bring the images from kafka cluster and augment the images.
+   In this case, i just use crop operation to augment four images from a single image. 
+
+
 ![Image](https://github.com/user-attachments/assets/e4a5b7c5-5547-4790-8af9-fb1bed210020)
 
 1. Build data pipeline for image datas
