@@ -2,8 +2,8 @@
 
 
 1. Build data pipeline for image datas
-   1) Do not allow the duplicated data
-      So 
+   1) Use exactly-once semantics in kafka
+      
    2) Image data is high-volume data. After spilting images, send the pieces of image to kafka.  
       
 2. To find the suitable size of piece, i tested by varying the size.
