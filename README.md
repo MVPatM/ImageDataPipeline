@@ -14,6 +14,14 @@
    2) Image data is high-volume data. After spilting images, send the pieces of image to kafka.  
 
    3) I use avro for serialization and deserialization for sending data to kafka cluster
-      
+
 2. To find the suitable size of piece, i tested by varying the size.
    The test was conducted under the circumstance that there was 3 brokers with 3 partitions on 3 servers. 
+
+
+
+
+
+
+### Image size
+![Image](https://github.com/user-attachments/assets/8f6c388b-0dde-4739-8456-b8fef3005728)
