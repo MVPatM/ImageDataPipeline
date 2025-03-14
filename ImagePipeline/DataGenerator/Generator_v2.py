@@ -51,7 +51,7 @@ def send_image() -> None:
             
             # make the message for request
             request_data_to_kafka = dict()
-            key = str(uuid4())
+            key = str(uuid4()) + str(int(time.time()))
             NumberOfSegment = int((sys.getsizeof(file) / segment_size))
 
             # Get the number of segments
