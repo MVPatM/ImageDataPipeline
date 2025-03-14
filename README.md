@@ -18,7 +18,7 @@
 2. To find the suitable size of piece, i tested by varying the size.
    The test was conducted under the circumstance that there was 3 brokers with 3 partitions on 3 servers. 
 
-
+![Image](https://github.com/user-attachments/assets/abc56d62-dbdb-4fd6-8d62-80d2d484a288)
 
 
 
