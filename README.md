@@ -24,4 +24,4 @@
 
 
 ### Image size
-![Image](https://github.com/user-attachments/assets/8f6c388b-0dde-4739-8456-b8fef3005728)
+![Image](https://github.com/user-attachments/assets/cc606d93-56d8-4bae-8fb5-56bac9cfe0cf)
