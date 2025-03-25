@@ -83,20 +83,15 @@ def get_image_from_kafka(TempStorage: dict, PerStorage: dict) -> None:
             for i in range(1, response_data['NumberOfSegment']):
                 Image += nested_arr[i]
 
-            # From bytes to numpy array and save
+            # From bytes to numpy array
             arr = np.asarray(bytearray(Image), dtype=np.uint8)
             numpyarr = cv2.imdecode(buf=arr, flags=1)
-            ImageName = name + 'aug0.JPEG'
-            cv2.imwrite(ImageName, numpyarr)
-            height = int(numpyarr.shape[0] / 3)
-            width = int(numpyarr.shape[1] / 3)
-            transform = A.Compose([A.RandomCrop(height, width)])
             
-            # Image Augmentation using albumentations and save
-            for i in range(1, 5):  
-                augmentation = transform(image = numpyarr)
-                ImageName = name + 'aug' + str(i) + '.JPEG'
-                cv2.imwrite(ImageName, augmentation['image'])
+            # Resize the image using albumentations and save
+            ImageName = 'Image/' + name + 'aug0.JPEG'
+            transform = A.Compose([A.Resize(224, 224)])
+            augmentation = transform(image = numpyarr)
+            cv2.imwrite(ImageName, augmentation['image'])
                 
             # Delete key and value
             del TempStorage[name]
@@ -117,11 +112,11 @@ def Clean_Dict(TempStorage: dict):
             if (Present_Time - Generated_time) > Clean_Period_ms:
                 del TempStorage[key]
 
-        # Iterate every 30 minutes
-        time.sleep(1800)
+        # Iterate every 15 minutes
+        time.sleep(900)
     
 def MiddleWare():
-    # get the avro scheam and registry to server
+    # Define the shared storage
     manager = multiprocessing.Manager()
     tempStorage = manager.dict()
     perStorage = manager.dict()
