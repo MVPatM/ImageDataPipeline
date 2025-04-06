@@ -7,6 +7,7 @@ from confluent_kafka.serialization import SerializationContext, MessageField, St
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
 from ImagePipeline.Configuration.kafka_config import image_folder, normal_producer_conf, schema_registry_url, segment_size, Topic_Name
+from ImagePipeline.Instance.ImageData import ImageDataFactory
 
 # Callback function for sending the result of request
 def delivery_report(err, msg) -> None:
