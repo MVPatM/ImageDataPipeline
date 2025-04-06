@@ -8,6 +8,7 @@ import logging
 import os
 import sys
 from uuid import uuid4
+from ImagePipeline.Instance.ImageData import ImageDataFactory
 
 app = Flask(__name__) 
 producer = Producer(normal_producer_conf)
@@ -23,7 +24,7 @@ def _setup() -> None:
             
     schema_registry_conf = {'url': schema_registry_url}
     schema_registry_client = SchemaRegistryClient(schema_registry_conf)
-    avro_serializer = AvroSerializer(schema_registry_client, schema_str)
+    avro_serializer = AvroSerializer(schema_registry_client, schema_str, ImageDataFactory.ToDict)
     string_serializer = StringSerializer('utf_8')
 
 # Callback function for sending the result of request
@@ -51,7 +52,7 @@ def MiddleWare():
     image_byte_file = image_data_file.stream.read()
     
     # make the message for request
-    request_data_to_kafka = dict()
+    image_data_factory = ImageDataFactory()
     key = str(uuid4()) + str(int(time.time()))
     NumberOfSegment = int((sys.getsizeof(image_byte_file) / segment_size))
     
@@ -61,30 +62,32 @@ def MiddleWare():
             producer.poll(0.0)
             
             # Chunk the image file
-            request_data_to_kafka['Image'] = image_byte_file[i*segment_size : (i+1)*segment_size]
-            request_data_to_kafka['SegmentOrder'] = i
+            request_data = image_data_factory.CreateImageData(NumberOfSegment=NumberOfSegment, 
+                                                                      SegmentOrder=i, 
+                                                                      Image=file[i*segment_size : (i+1)*segment_size])
             
             # produce data to kafka cluster
-            producer.produce(topic=Topic_Name, key = string_serializer(key), value= avro_serializer(request_data_to_kafka, SerializationContext(Topic_Name, MessageField.VALUE)), callback=delivery_report)
+            producer.produce(topic=Topic_Name, key = string_serializer(key), value= avro_serializer(request_data, SerializationContext(Topic_Name, MessageField.VALUE)), callback=delivery_report)
     else:
         NumberOfSegment += 1
-        request_data_to_kafka['NumberOfSegment'] = NumberOfSegment
         
         for i in range(0, NumberOfSegment - 1):
             producer.poll(0.0)
             
             # Chunk the image file
-            request_data_to_kafka['Image'] = image_byte_file[i*segment_size : (i+1)*segment_size]
-            request_data_to_kafka['SegmentOrder'] = i
+            request_data = image_data_factory.CreateImageData(NumberOfSegment=NumberOfSegment, 
+                                                                      SegmentOrder=i, 
+                                                                      Image=file[i*segment_size : (i+1)*segment_size])
             
             # produce data to kafka cluster
-            producer.produce(topic=Topic_Name, key = string_serializer(key), value= avro_serializer(request_data_to_kafka, SerializationContext(Topic_Name, MessageField.VALUE)), callback=delivery_report)
+            producer.produce(topic=Topic_Name, key = string_serializer(key), value= avro_serializer(request_data, SerializationContext(Topic_Name, MessageField.VALUE)), callback=delivery_report)
         
         # the last segment that does not fit to segment size because segment is smaller
         producer.poll(0.0)
-        request_data_to_kafka['Image'] = image_byte_file[(NumberOfSegment - 1)*segment_size:]
-        request_data_to_kafka['SegmentOrder'] = NumberOfSegment - 1
-        producer.produce(topic=Topic_Name,key = string_serializer(key) ,value= avro_serializer(request_data_to_kafka, SerializationContext(Topic_Name, MessageField.VALUE)), callback=delivery_report)
+        request_data = image_data_factory.CreateImageData(NumberOfSegment, 
+                                                                NumberOfSegment - 1, 
+                                                                file[(NumberOfSegment - 1)*segment_size:])
+        producer.produce(topic=Topic_Name,key = string_serializer(key) ,value= avro_serializer(request_data, SerializationContext(Topic_Name, MessageField.VALUE)), callback=delivery_report)
         
     producer.flush()
     
