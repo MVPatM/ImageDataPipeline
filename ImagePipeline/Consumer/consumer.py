@@ -1,18 +1,16 @@
-import multiprocessing.managers
-import multiprocessing.shared_memory
 from confluent_kafka import Consumer
 from confluent_kafka.serialization import SerializationContext, MessageField, StringDeserializer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroDeserializer
-from ImagePipeline.Configuration.kafka_config import consumer_conf, schema_registry_url, Topic_Name, Clean_Period_ms
-import albumentations as A
+from ImagePipeline.Configuration.kafka_config import consumer_conf, schema_registry_url, Topic_Name, Clean_Period_ms, aws_access_key_id, aws_secret_access_key, bucket_name
 import numpy as np
 import cv2
-import multiprocessing 
 import os
 import time
+import boto3
+import threading
 
-def get_image_from_kafka(TempStorage: dict, PerStorage: dict) -> None:
+def get_image_from_kafka(TempStorage: dict, PerStorage: dict, s3_client) -> None:
     with open(f"{os.path.dirname(os.path.abspath(os.path.dirname(__file__)))}/Configuration/ImageData.avsc") as f:
         schema_str = f.read()
     
@@ -87,11 +85,18 @@ def get_image_from_kafka(TempStorage: dict, PerStorage: dict) -> None:
             arr = np.asarray(bytearray(Image), dtype=np.uint8)
             numpyarr = cv2.imdecode(buf=arr, flags=1)
             
-            # Resize the image using albumentations and save
-            ImageName = 'Image/' + name + 'aug0.JPEG'
-            transform = A.Compose([A.Resize(224, 224)])
-            augmentation = transform(image = numpyarr)
-            cv2.imwrite(ImageName, augmentation['image'])
+            # Save the temporary image
+            ImageName = 'Tmp/' + name + '.JPEG'
+            cv2.imwrite(ImageName, numpyarr)
+            
+            # Upload the file to s3
+            filepath = os.path.dirname(os.path.realpath(__file__)) + '/' + ImageName
+            with open(filepath, 'rb') as file_obj:
+               s3_client.upload_fileobj(file_obj, bucket_name, 'img/' + name + '.JPEG')
+            
+            # Delete the tmp file
+            if os.path.exists(filepath):
+                os.remove(filepath)
                 
             # Delete key and value
             del TempStorage[name]
@@ -101,7 +106,7 @@ def get_image_from_kafka(TempStorage: dict, PerStorage: dict) -> None:
     
     consumer.close()
 
-def Clean_Dict(TempStorage: dict):
+def Clean_Dict(TempStorage: dict) -> None:
     Present_Time = round(time.time() * 1000)
     
     while True:
@@ -115,27 +120,28 @@ def Clean_Dict(TempStorage: dict):
         # Iterate every 15 minutes
         time.sleep(900)
     
-def MiddleWare():
+def MiddleWare() -> None:
     # Define the shared storage
-    manager = multiprocessing.Manager()
-    tempStorage = manager.dict()
-    perStorage = manager.dict()
+    tempStorage = dict()
+    perStorage = dict()
+    s3_client = boto3.client('s3',
+                             aws_access_key_id = aws_access_key_id,
+                             aws_secret_access_key = aws_secret_access_key)
        
-    # multiprocessing
-    procs = []
-    for i in range(4):
-        p = multiprocessing.Process(target=get_image_from_kafka, args=(tempStorage, perStorage, ))
-        p.start()
-        procs.append(p)
+    # multithreading
+    threads = []
+    for i in range(3):
+        t = threading.Thread(target=get_image_from_kafka, args=(tempStorage, perStorage, s3_client, ))
+        t.start()
+        threads.append(t)
     
     # Generate the process for cleaning the dictionary
-    p = multiprocessing.Process(target=Clean_Dict, args=(tempStorage, ))
-    p.start()
-    procs.append(p)
+    t = threading.Thread(target=Clean_Dict, args=(tempStorage, ))
+    t.start()
+    threads.append(t)
 
-    
-    for p in procs:
-        p.join()
+    for t in threads:
+        t.join()
 
 if __name__ == "__main__":
     MiddleWare()    
