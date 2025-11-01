@@ -2,7 +2,7 @@ from confluent_kafka import Consumer
 from confluent_kafka.serialization import SerializationContext, MessageField, StringDeserializer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroDeserializer
-from ImagePipeline.Configuration.kafka_config import consumer_conf, schema_registry_url, Topic_Name, Clean_Period_ms, aws_access_key_id, aws_secret_access_key, bucket_name
+from ImagePipeline.Configuration.kafka_config import consumer_conf, schema_registry_url, Topic_Name, Clean_Period_ms, aws_access_key_id, aws_secret_access_key, bucket_name, db_server, db_name, collection_name
 import numpy as np
 import cv2
 import os
