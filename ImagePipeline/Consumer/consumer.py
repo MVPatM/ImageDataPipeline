@@ -127,21 +127,26 @@ def MiddleWare() -> None:
     s3_client = boto3.client('s3',
                              aws_access_key_id = aws_access_key_id,
                              aws_secret_access_key = aws_secret_access_key)
-       
-    # multithreading
-    threads = []
-    for i in range(3):
-        t = threading.Thread(target=get_image_from_kafka, args=(tempStorage, perStorage, s3_client, ))
-        t.start()
-        threads.append(t)
-    
-    # Generate the process for cleaning the dictionary
-    t = threading.Thread(target=Clean_Dict, args=(tempStorage, ))
-    t.start()
-    threads.append(t)
 
-    for t in threads:
-        t.join()
+    # Set to MongoDB config
+    client = MongoClient(db_server)
+    db = client[db_name] 
+    collection = db[collection_name]
+    
+    # multiprocessing
+    processes = []
+    for i in range(3):
+        p = multiprocessing.Process(
+            target=get_image_from_kafka,
+            args=(tempStorage, perStorage, s3_client, collection,)
+        )
+        processes.append(p)
+        p.start()
+
+    for p in processes:
+        p.join()
+    
+
 
 if __name__ == "__main__":
     MiddleWare()    
