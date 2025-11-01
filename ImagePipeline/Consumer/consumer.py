@@ -10,7 +10,7 @@ import time
 import boto3
 import threading
 
-def get_image_from_kafka(TempStorage: dict, PerStorage: dict, s3_client) -> None:
+def get_image_from_kafka(TempStorage: dict, PerStorage: dict, s3_client, collection) -> None:
     with open(f"{os.path.dirname(os.path.abspath(os.path.dirname(__file__)))}/Configuration/ImageData.avsc") as f:
         schema_str = f.read()
     
@@ -91,8 +91,15 @@ def get_image_from_kafka(TempStorage: dict, PerStorage: dict, s3_client) -> None
             
             # Upload the file to s3
             filepath = os.path.dirname(os.path.realpath(__file__)) + '/' + ImageName
+            upload_url = 'img/' + name + '.JPEG'
             with open(filepath, 'rb') as file_obj:
-               s3_client.upload_fileobj(file_obj, bucket_name, 'img/' + name + '.JPEG')
+               s3_client.upload_fileobj(file_obj, bucket_name, upload_url)
+
+            # Upload the file to mongodb
+            collection.insert_one({
+                "s3_url": upload_url,
+                "upload_date": datetime.now()
+            })
             
             # Delete the tmp file
             if os.path.exists(filepath):
