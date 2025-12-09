@@ -17,14 +17,7 @@ consumer_conf = {
     'group.id': 'testGroup'
 }
 
-Clean_Period_ms = 15 * 60 * 1000
-
-db_server = ""
-
-db_name = "image_metadata"
-
-collection_name = "meta"
-
+db_url = ""
 
 # For both
 schema_registry_url = ':8081'
@@ -32,8 +25,6 @@ schema_registry_url = ':8081'
 Topic_Name = 'kafkatest'
 
 image_folder = ''
-
-segment_size = 30000
 
 aws_access_key_id = ''
 
