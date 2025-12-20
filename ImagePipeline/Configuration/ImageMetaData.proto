@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message ImageMetaData {
+    string s3_url = 1;
+    int64 produce_time = 2;
+}
