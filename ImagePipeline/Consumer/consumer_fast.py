@@ -9,7 +9,7 @@ from PIL import Image
 from io import BytesIO
 import numpy as np
 import albumentations as A
-from transformers import pipeline
+from transformers import pipeline, Pipeline
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from ImagePipeline.Consumer.consumer_dao import ImageDataDAO
@@ -19,9 +19,8 @@ def get_image(s3_client, s3_url: str) -> BytesIO:
     s3_client.download_fileobj(bucket_name, s3_url, buffer)
     return buffer
     
-def get_class(image: BytesIO) -> str:
+def get_class(image: BytesIO, classifier: Pipeline) -> str:
     image = Image.open(image) # pillow로 변환
-    classifier = pipeline("image-classification", model="google/vit-base-patch16-224")
     result = classifier(image)
     return result[0]['label']
 
@@ -39,6 +38,7 @@ def image_augment(image: BytesIO) -> BytesIO:
 def get_image_from_kafka(s3_client, sessionlocal) -> None:
     deserializer = ProtobufDeserializer(imagemetadata_pb2.ImageMetaData, {'use.deprecated.format': False})
     string_deserializer = StringDeserializer('utf_8')
+    classifier = pipeline("image-classification", model="google/vit-base-patch16-224")
     
     # subscribe to kafka topic
     consumer = Consumer(consumer_conf)
@@ -56,7 +56,7 @@ def get_image_from_kafka(s3_client, sessionlocal) -> None:
         # get image from s3
         s3_url = response_data.s3_url
         image_bytesIO = get_image(s3_client, s3_url)
-        image_class = get_class(image_bytesIO)
+        image_class = get_class(image_bytesIO, classifier)
         image_bytesIO = image_augment(image_bytesIO)
         
         try:
