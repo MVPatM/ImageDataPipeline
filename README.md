@@ -1,7 +1,7 @@
 # ImageDataPipeline
 
 ### Program Structure
-
+<img width="2816" height="1536" alt="Image" src="https://github.com/user-attachments/assets/986d5676-360e-437d-8cd3-8311337cb11c" />
 
 
 1. I assume that clients generate the images and send to near fastapi server.
