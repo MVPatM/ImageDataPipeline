@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message ImageData {
+    bytes Image = 1;
+    string file_name = 2;
+    int64 produce_time = 3;
+}
