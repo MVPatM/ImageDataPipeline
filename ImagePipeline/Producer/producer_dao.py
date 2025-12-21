@@ -12,12 +12,24 @@ class DeadLetterDAO:
         self.session.commit()
         
     def get_dead_letter(self, batch_size: int = 100) -> Generator:
-        query = select(DeadLetter)
-        stmt = query.execution_options(yield_per=batch_size)
-        result_proxy = self.session.scalars(stmt)
-        for batch in result_proxy.partitions(batch_size):
-            yield batch
+        last_seen_id = 0
         
+        while True:
+            stmt = (
+                select(DeadLetter)
+                .where(DeadLetter.id > last_seen_id)
+                .order_by(DeadLetter.id)
+                .limit(batch_size)
+            )
+            
+            batch = self.session.scalars(stmt).all()
+            
+            if not batch:
+                break
+            
+            yield batch
+            last_seen_id = batch[-1].id
+            
         self.session.commit()
         
     def delete_dead_letter(self, key: bytes) -> None:
