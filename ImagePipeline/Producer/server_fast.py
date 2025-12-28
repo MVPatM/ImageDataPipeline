@@ -93,7 +93,7 @@ async def delivery_file(file_data: FileData,
                            value=serializer(request_data_to_kafka,
                                             SerializationContext(Topic_Name_meta, MessageField.VALUE)), 
                            callback=delivery_report)
-    kafka_producer.flush()
+    kafka_producer.poll(0)
 
 # send payload image directly to kafka
 async def produce_img(file_data: FileData,
@@ -108,7 +108,7 @@ async def produce_img(file_data: FileData,
                            value=serializer(request_data_to_kafka,
                                             SerializationContext(Topic_Name_payload, MessageField.VALUE)), 
                            callback=delivery_report)
-    kafka_producer.flush()
+    kafka_producer.poll(0)
 
 # write log function
 def write_log_sync(log_file_name: str, content: str) -> None:
