@@ -36,7 +36,7 @@ class KafkaService:
         self._string_serializer = StringSerializer('utf_8')
         self._string_deserializer = StringDeserializer('utf_8')
     
-    def produceMetaData(self, s3_url: str, file_fullname: str) -> None:
+    def produceMetaData(self, s3_url: str, file_fullname: str, delivery_report: function) -> None:
         request_data_to_kafka = imagemetadata_pb2.ImageMetaData(s3_url=s3_url, 
                                                                 produce_time=int(time.time() * 1000))
         self._producer.produce(topic=self.topic_name_meta,
