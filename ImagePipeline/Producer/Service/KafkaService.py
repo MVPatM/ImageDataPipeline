@@ -47,11 +47,6 @@ class KafkaMetaService(KafkaService):
         self._serializer_meta = ProtobufSerializer(imagemetadata_pb2.ImageMetaData,
                                             self._schema_registry_client,
                                             {'use.deprecated.format': False})
-        self._serializer_payload = ProtobufSerializer(imagedata_pb2.ImageData,
-                                            self._schema_registry_client,
-                                            {'use.deprecated.format': False})
-        self._string_serializer = StringSerializer('utf_8')
-        self._string_deserializer = StringDeserializer('utf_8')
     
     def produceMetaData(self, s3_url: str, file_fullname: str, delivery_report) -> None:
         request_data_to_kafka = imagemetadata_pb2.ImageMetaData(s3_url=s3_url, 
@@ -77,14 +72,9 @@ class KafkaPayloadService(KafkaService):
             "linger.ms": 10}
         
         self._producer = Producer(normal_producer_conf)
-        self._serializer_meta = ProtobufSerializer(imagemetadata_pb2.ImageMetaData,
-                                            self._schema_registry_client,
-                                            {'use.deprecated.format': False})
         self._serializer_payload = ProtobufSerializer(imagedata_pb2.ImageData,
                                             self._schema_registry_client,
                                             {'use.deprecated.format': False})
-        self._string_serializer = StringSerializer('utf_8')
-        self._string_deserializer = StringDeserializer('utf_8')
     
     def producePayload(self, file_fullname: str, imagedata: bytes, delivery_report) -> None:
         request_data_to_kafka = imagedata_pb2.ImageData(Image=imagedata,
