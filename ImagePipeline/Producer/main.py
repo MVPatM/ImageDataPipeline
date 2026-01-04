@@ -3,11 +3,8 @@ from contextlib import asynccontextmanager
 from ImagePipeline.Producer.Service.KafkaService import KafkaService
 from ImagePipeline.Producer.utils.log import write_log
 from ImagePipeline.Producer.utils.FileData import FileData
-from ImagePipeline.Producer.CRUD.producer_dao import DeadLetterDAO
 import os, sys
 from uuid import uuid4
-from datetime import datetime
-from ImagePipeline.Producer.utils.db_utils import get_db_session
 from dotenv import load_dotenv
 from aiobotocore.session import get_session
 
@@ -39,27 +36,6 @@ def get_s3_client():
 def get_uuid_key() -> str:
     return str(uuid4())
 
-def delivery_report(err, msg):
-        if err is not None:
-            console_msg = f"Delivery failed for record {msg.value()} at {datetime.now()}: {err}"
-            print(console_msg)
-            
-            # insert dead letter to db
-            with get_db_session() as session:
-                dao = DeadLetterDAO(session)
-                dao.add_dead_letter(msg.key(), msg.value(), msg.topic())
-        else:
-            console_msg = f"Record {msg.value()} successfully produced {msg.topic()} [{msg.partition()}] at offset {msg.offset()} and latency is {msg.latency()}"
-            print(console_msg)
-            
-            # remove the tmp file
-            tmpfile_path = os.path.dirname(os.path.abspath(__file__)) 
-            + '/tmp/' 
-            + app.state.kafka_producer.get_string_deserializer()(msg.key())
-            
-            if os.path.exists(tmpfile_path):
-                os.remove(tmpfile_path)
-
 # send metadata with s3 url to kafka
 async def produce_metadata(file_data: FileData, 
                 kafka_producer: KafkaService,
@@ -69,13 +45,13 @@ async def produce_metadata(file_data: FileData,
     await s3_client.put_object(Body=file_data.get_imgBytesIO(), 
                                Bucket=app.state.bucket_name, 
                                Key=s3_url)
-    kafka_producer.produceMetaData(s3_url, file_fullname, delivery_report)
+    kafka_producer.produceMetaData(s3_url, file_fullname)
 
 # send payload image directly to kafka
 async def produce_img(file_data: FileData,
                 kafka_producer: KafkaService) -> None:
     kafka_producer.producePayload(file_data.get_filename() + "." + file_data.get_fileformat() 
-                                , file_data.get_imgbyte(), delivery_report)
+                                , file_data.get_imgbyte())
 
 @app.post("/upload")
 async def Middleware(file: bytes = File(),
