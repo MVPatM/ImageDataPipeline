@@ -8,6 +8,9 @@ from confluent_kafka.serialization import StringDeserializer, StringSerializer
 import os
 from time import time
 from dotenv import load_dotenv
+from ImagePipeline.Producer.CRUD.producer_dao import DeadLetterDAO
+from ImagePipeline.Producer.utils.db_utils import get_db_session
+from datetime import datetime
 
 class KafkaService:
     def __init__(self):
@@ -30,6 +33,28 @@ class KafkaService:
     def msg_flush(self):
         self._producer.flush()
     
+    @staticmethod
+    def delivery_report(err, msg):
+        if err is not None:
+            console_msg = f"Delivery failed for record {msg.value()} at {datetime.now()}: {err}"
+            print(console_msg)
+            
+            # insert dead letter to db
+            with get_db_session() as session:
+                dao = DeadLetterDAO(session)
+                dao.add_dead_letter(msg.key(), msg.value(), msg.topic())
+        else:
+            console_msg = f"Record {msg.value()} successfully produced {msg.topic()} [{msg.partition()}] at offset {msg.offset()} and latency is {msg.latency()}"
+            print(console_msg)
+            
+            # remove the tmp file
+            tmpfile_path = os.path.dirname(os.path.abspath(__file__)) 
+            + '/tmp/' 
+            + StringDeserializer('utf_8')(msg.key())
+            
+            if os.path.exists(tmpfile_path):
+                os.remove(tmpfile_path)
+    
 class KafkaMetaService(KafkaService):
     def __init__(self):
         super().__init__()
@@ -48,14 +73,14 @@ class KafkaMetaService(KafkaService):
                                             self._schema_registry_client,
                                             {'use.deprecated.format': False})
     
-    def produceMetaData(self, s3_url: str, file_fullname: str, delivery_report) -> None:
+    def produceMetaData(self, s3_url: str, file_fullname: str) -> None:
         request_data_to_kafka = imagemetadata_pb2.ImageMetaData(s3_url=s3_url, 
                                                                 produce_time=int(time.time() * 1000))
         self._producer.produce(topic=self.topic_name_meta,
                            key=self._string_serializer(file_fullname),
                            value=self._serializer_meta(request_data_to_kafka,
                                             SerializationContext(self.topic_name_meta, MessageField.VALUE)), 
-                           callback=delivery_report)
+                           callback=self.delivery_report)
         self._producer.poll(0)
 
 class KafkaPayloadService(KafkaService):
@@ -75,8 +100,9 @@ class KafkaPayloadService(KafkaService):
         self._serializer_payload = ProtobufSerializer(imagedata_pb2.ImageData,
                                             self._schema_registry_client,
                                             {'use.deprecated.format': False})
+
     
-    def producePayload(self, file_fullname: str, imagedata: bytes, delivery_report) -> None:
+    def producePayload(self, file_fullname: str, imagedata: bytes) -> None:
         request_data_to_kafka = imagedata_pb2.ImageData(Image=imagedata,
                                                     produce_time=int(time.time() * 1000))
         
@@ -84,5 +110,5 @@ class KafkaPayloadService(KafkaService):
                            key=self._string_serializer(file_fullname),
                            value=self._serializer_payload(request_data_to_kafka,
                                             SerializationContext(self.topic_name_payload, MessageField.VALUE)), 
-                           callback=delivery_report)
+                           callback=self.delivery_report)
         self._producer.poll(0)
