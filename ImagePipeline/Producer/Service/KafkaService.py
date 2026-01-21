@@ -46,14 +46,6 @@ class KafkaService:
         else:
             console_msg = f"Record {msg.value()} successfully produced {msg.topic()} [{msg.partition()}] at offset {msg.offset()} and latency is {msg.latency()}"
             print(console_msg)
-            
-            # remove the tmp file
-            tmpfile_path = os.path.dirname(os.path.abspath(__file__)) 
-            + '/tmp/' 
-            + StringDeserializer('utf_8')(msg.key())
-            
-            if os.path.exists(tmpfile_path):
-                os.remove(tmpfile_path)
     
 class KafkaMetaService(KafkaService):
     def __init__(self):
