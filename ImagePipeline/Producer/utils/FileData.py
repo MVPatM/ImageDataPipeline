@@ -25,11 +25,3 @@ class FileData():
     
     def get_fileformat(self) -> str:
         return self.file_format
-    
-    async def save_imgfile(self, path: str) -> None:
-        async with aiofiles.open(path, mode='wb') as f:
-            await f.write(self.imgbyte)
-
-    async def store_tmp(self) -> None:
-        tmp_path = os.path.dirname(os.path.abspath(__file__)) + '/tmp/' + self.get_file_fullname()
-        await self.save_imgfile(tmp_path)
