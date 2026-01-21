@@ -63,10 +63,9 @@ async def Middleware(file: bytes = File(),
         file_data = FileData(img_byte=file,
                              file_name=file_name)
         
-        if file_size > 100 * 1024:  # 100kb
+        if file_size > 200 * 1024:  # 200kb
             await produce_metadata(file_data, kafka_producer, s3_client)
         else:
-            await file_data.store_tmp()
             await produce_img(file_data, kafka_producer)
         return ({'message': f"success"})
     except Exception as e:
